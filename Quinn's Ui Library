@@ -391,10 +391,3 @@ function ScyllaLibrary:CreateWindow(options)
 
     return windowAPI
 end
-
-
-local Scylla = ScyllaLibrary:CreateWindow({
-    Name = "Portal Hub - Quinn's Ui Library",
-    BackgroundColor = Color3.fromRGB(50, 50, 50),
-    HeaderColor = Color3.fromRGB(35, 35, 35)
-})
