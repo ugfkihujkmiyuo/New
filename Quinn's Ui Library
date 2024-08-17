@@ -1,0 +1,400 @@
+local ScyllaLibrary = {}
+ScyllaLibrary.__index = ScyllaLibrary
+
+function ScyllaLibrary:MakeDraggable(frame, handle)
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+end
+
+function ScyllaLibrary:CreateWindow(options)
+    local window = Instance.new("ScreenGui")
+    window.Name = options.Name or "Scylla"
+    window.ResetOnSpawn = false
+    window.Parent = game:GetService("CoreGui") 
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 500, 0, 400)
+    frame.Position = UDim2.new(0.5, -250, 0.5, -200) 
+    frame.BackgroundColor3 = options.BackgroundColor or Color3.fromRGB(50, 50, 50)
+    frame.BorderSizePixel = 0
+    frame.Parent = window
+
+    local title = Instance.new("TextLabel")
+    title.Text = options.Name or "Scylla"
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundColor3 = options.HeaderColor or Color3.fromRGB(35, 35, 35)
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.Font = Enum.Font.SourceSans
+    title.TextSize = 24
+    title.Parent = frame
+
+    local tabBar = Instance.new("Frame")
+    tabBar.Size = UDim2.new(1, 0, 0, 30)
+    tabBar.Position = UDim2.new(0, 0, 0, 40)
+    tabBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    tabBar.BorderSizePixel = 0
+    tabBar.Parent = frame
+
+    ScyllaLibrary:MakeDraggable(frame, title)
+
+    local windowAPI = {}
+    windowAPI.Frame = frame
+    windowAPI.Tabs = {}
+    windowAPI.ActiveColorPicker = nil 
+    local tabXOffset = 0 
+
+    function windowAPI:CreateTab(tabOptions)
+        local tabButton = Instance.new("TextButton")
+        tabButton.Text = tabOptions.Name or "Tab"
+        tabButton.Size = UDim2.new(0, 100, 1, 0)
+        tabButton.Position = UDim2.new(0, tabXOffset, 0, 0) 
+        tabButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tabButton.Font = Enum.Font.SourceSans
+        tabButton.TextSize = 18
+        tabButton.BorderSizePixel = 0
+        tabButton.Parent = tabBar
+
+        tabXOffset = tabXOffset + 100 
+
+        local tabFrame = Instance.new("Frame")
+        tabFrame.Size = UDim2.new(1, 0, 1, -70)
+        tabFrame.Position = UDim2.new(0, 0, 0, 70)
+        tabFrame.BackgroundTransparency = 1
+        tabFrame.Visible = false
+        tabFrame.Parent = frame
+
+        local tabAPI = {}
+        tabAPI.Frame = tabFrame
+        tabAPI.SectionYOffset = 0
+
+        function tabAPI:CreateSection(sectionOptions)
+            local section = Instance.new("Frame")
+            section.Size = UDim2.new(1, 0, 0, 180)
+            section.Position = UDim2.new(0, 0, 0, tabAPI.SectionYOffset)
+            section.BackgroundColor3 = sectionOptions.BackgroundColor or Color3.fromRGB(40, 40, 40)
+            section.BorderSizePixel = 0
+            section.Parent = tabFrame
+
+            local sectionTitle = Instance.new("TextLabel")
+            sectionTitle.Text = sectionOptions.Name or "Section"
+            sectionTitle.Size = UDim2.new(1, 0, 0, 30)
+            sectionTitle.BackgroundColor3 = sectionOptions.HeaderColor or Color3.fromRGB(30, 30, 30)
+            sectionTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+            sectionTitle.Font = Enum.Font.SourceSans
+            sectionTitle.TextSize = 18
+            sectionTitle.Parent = section
+
+            local elementYPos = 30
+            local sectionHeight = 30
+
+            local sectionAPI = {}
+
+            function sectionAPI:AddToggle(toggleOptions)
+                local toggleFrame = Instance.new("Frame")
+                toggleFrame.Size = UDim2.new(1, -10, 0, 30)
+                toggleFrame.Position = UDim2.new(0, 5, 0, elementYPos)
+                toggleFrame.BackgroundColor3 = toggleOptions.Color or Color3.fromRGB(60, 60, 60)
+                toggleFrame.Parent = section
+
+                local toggleLabel = Instance.new("TextLabel")
+                toggleLabel.Text = toggleOptions.Name or "Toggle"
+                toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+                toggleLabel.Position = UDim2.new(0.05, 0, 0, 0)
+                toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                toggleLabel.Font = Enum.Font.SourceSans
+                toggleLabel.TextSize = 18
+                toggleLabel.BackgroundTransparency = 1
+                toggleLabel.Parent = toggleFrame
+
+                local checkbox = Instance.new("TextButton")
+                checkbox.Text = ""
+                checkbox.Size = UDim2.new(0, 20, 0, 20)
+                checkbox.Position = UDim2.new(0.85, 0, 0.5, -10)
+                checkbox.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+                checkbox.BorderSizePixel = 0
+                checkbox.Parent = toggleFrame
+
+                local checked = Instance.new("Frame")
+                checked.Size = UDim2.new(1, -4, 1, -4)
+                checked.Position = UDim2.new(0, 2, 0, 2)
+                checked.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                checked.Visible = false
+                checked.Parent = checkbox
+
+                local toggleState = false
+
+                checkbox.MouseButton1Click:Connect(function()
+                    toggleState = not toggleState
+                    checked.Visible = toggleState
+                    if toggleOptions.Callback then
+                        toggleOptions.Callback(toggleState)
+                    end
+                end)
+
+                elementYPos = elementYPos + 40
+                sectionHeight = sectionHeight + 40
+                section.Size = UDim2.new(1, 0, 0, sectionHeight)
+            end
+
+            function sectionAPI:AddSlider(sliderOptions)
+                local sliderFrame = Instance.new("Frame")
+                sliderFrame.Size = UDim2.new(1, -10, 0, 30)
+                sliderFrame.Position = UDim2.new(0, 5, 0, elementYPos)
+                sliderFrame.BackgroundColor3 = sliderOptions.Color or Color3.fromRGB(60, 60, 60)
+                sliderFrame.Parent = section
+
+                local sliderBar = Instance.new("Frame")
+                sliderBar.Size = UDim2.new(0.9, 0, 0, 6)
+                sliderBar.Position = UDim2.new(0.05, 0, 0.5, -3)
+                sliderBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+                sliderBar.Parent = sliderFrame
+
+                local sliderHandle = Instance.new("TextButton")
+                sliderHandle.Size = UDim2.new(0, 12, 0, 12)
+                sliderHandle.Position = UDim2.new(0, -6, 0.5, -6)
+                sliderHandle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                sliderHandle.BorderSizePixel = 0
+                sliderHandle.Text = ""
+                sliderHandle.Parent = sliderBar
+
+                local minValue = sliderOptions.Min or 0
+                local maxValue = sliderOptions.Max or 100
+                local currentValue = sliderOptions.Value or minValue
+
+                local function updateSlider(value)
+                    currentValue = math.clamp(value, minValue, maxValue)
+                    local percentage = (currentValue - minValue) / (maxValue - minValue)
+                    sliderHandle.Position = UDim2.new(percentage, -6, 0.5, -6)
+                    if sliderOptions.Callback then
+                        sliderOptions.Callback(currentValue)
+                    end
+                end
+
+                sliderHandle.MouseButton1Down:Connect(function()
+                    local inputChangedConn
+                    inputChangedConn = game:GetService("UserInputService").InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement then
+                            local delta = input.Position.X - sliderBar.AbsolutePosition.X
+                            local percentage = delta / sliderBar.AbsoluteSize.X
+                            updateSlider(minValue + (percentage * (maxValue - minValue)))
+                        end
+                    end)
+                    
+                    local inputEndedConn
+                    inputEndedConn = game:GetService("UserInputService").InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            inputChangedConn:Disconnect()
+                            inputEndedConn:Disconnect()
+                        end
+                    end)
+                end)
+
+                updateSlider(currentValue)
+
+                elementYPos = elementYPos + 40
+                sectionHeight = sectionHeight + 40
+                section.Size = UDim2.new(1, 0, 0, sectionHeight)
+            end
+
+            function sectionAPI:AddColorPicker(pickerOptions)
+                local pickerButton = Instance.new("TextButton")
+                pickerButton.Size = UDim2.new(1, -10, 0, 30)
+                pickerButton.Position = UDim2.new(0, 5, 0, elementYPos)
+                pickerButton.BackgroundColor3 = pickerOptions.Color or Color3.fromRGB(60, 60, 60)
+                pickerButton.Text = pickerOptions.Name or "Select Color"
+                pickerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                pickerButton.Font = Enum.Font.SourceSans
+                pickerButton.TextSize = 18
+                pickerButton.Parent = section
+
+                local colorPickerFrame = Instance.new("Frame")
+                colorPickerFrame.Size = UDim2.new(0, 250, 0, 150)
+                colorPickerFrame.Position = UDim2.new(1, 10, 0, 0) 
+                colorPickerFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+                colorPickerFrame.Visible = false
+                colorPickerFrame.Parent = pickerButton
+
+                local colors = {
+                    Color3.fromRGB(255, 0, 0),    -- Red
+                    Color3.fromRGB(0, 255, 0),    -- Green
+                    Color3.fromRGB(0, 0, 255),    -- Blue
+                    Color3.fromRGB(255, 255, 0),  -- Yellow
+                    Color3.fromRGB(255, 0, 255),  -- Magenta
+                    Color3.fromRGB(0, 255, 255),  -- Cyan
+                    Color3.fromRGB(255, 255, 255),-- White
+                    Color3.fromRGB(0, 0, 0),      -- Black
+                    Color3.fromRGB(128, 0, 128),  -- Purple
+                    Color3.fromRGB(255, 165, 0),  -- Orange
+                    Color3.fromRGB(139, 69, 19),  -- Brown
+                    Color3.fromRGB(75, 0, 130),   -- Indigo
+                    Color3.fromRGB(255, 192, 203),-- Pink
+                    Color3.fromRGB(0, 128, 128),  -- Teal
+                    Color3.fromRGB(128, 128, 0),  -- Olive
+                    Color3.fromRGB(192, 192, 192),-- Silver
+                    Color3.fromRGB(210, 180, 140),-- Tan
+                    Color3.fromRGB(220, 20, 60),  -- Crimson
+                    Color3.fromRGB(102, 205, 170),-- Medium Aquamarine
+                    Color3.fromRGB(0, 100, 0),    -- Dark Green
+                    Color3.fromRGB(178, 34, 34),  -- Firebrick
+                    Color3.fromRGB(244, 164, 96), -- Sandy Brown
+                    Color3.fromRGB(64, 224, 208)  -- Turquoise
+                }
+
+                local colorButtonSize = UDim2.new(0, 40, 0, 40)
+                for i, color in ipairs(colors) do
+                    local colorButton = Instance.new("TextButton")
+                    colorButton.Size = colorButtonSize
+                    colorButton.Position = UDim2.new(0, ((i-1) % 5) * 50 + 10, 0, math.floor((i-1) / 5) * 50 + 10)
+                    colorButton.BackgroundColor3 = color
+                    colorButton.Text = ""
+                    colorButton.Parent = colorPickerFrame
+
+                    colorButton.MouseButton1Click:Connect(function()
+                        if pickerOptions.Callback then
+                            pickerOptions.Callback(color)
+                        end
+                        colorPickerFrame.Visible = false
+                        windowAPI.ActiveColorPicker = nil
+                    end)
+                end
+
+                pickerButton.MouseButton1Click:Connect(function()
+                    if windowAPI.ActiveColorPicker and windowAPI.ActiveColorPicker ~= colorPickerFrame then
+                        windowAPI.ActiveColorPicker.Visible = false
+                    end
+                    colorPickerFrame.Visible = not colorPickerFrame.Visible
+                    windowAPI.ActiveColorPicker = colorPickerFrame.Visible and colorPickerFrame or nil
+                end)
+
+                elementYPos = elementYPos + 40
+                sectionHeight = sectionHeight + 40
+                section.Size = UDim2.new(1, 0, 0, sectionHeight)
+            end
+
+            function sectionAPI:AddKeybind(keybindOptions)
+                local keybindFrame = Instance.new("Frame")
+                keybindFrame.Size = UDim2.new(1, -10, 0, 30)
+                keybindFrame.Position = UDim2.new(0, 5, 0, elementYPos)
+                keybindFrame.BackgroundColor3 = keybindOptions.Color or Color3.fromRGB(60, 60, 60)
+                keybindFrame.Parent = section
+
+                local keybindLabel = Instance.new("TextLabel")
+                keybindLabel.Text = keybindOptions.Name or "Keybind"
+                keybindLabel.Size = UDim2.new(0.7, 0, 1, 0)
+                keybindLabel.Position = UDim2.new(0.05, 0, 0, 0)
+                keybindLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                keybindLabel.Font = Enum.Font.SourceSans
+                keybindLabel.TextSize = 18
+                keybindLabel.BackgroundTransparency = 1
+                keybindLabel.Parent = keybindFrame
+
+                local keybindButton = Instance.new("TextButton")
+                keybindButton.Text = keybindOptions.DefaultKey or "None"
+                keybindButton.Size = UDim2.new(0, 80, 0, 20)
+                keybindButton.Position = UDim2.new(0.85, -80, 0.5, -10)
+                keybindButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+                keybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                keybindButton.BorderSizePixel = 0
+                keybindButton.Font = Enum.Font.SourceSans
+                keybindButton.TextSize = 14
+                keybindButton.Parent = keybindFrame
+
+                local binding = false
+                local assignedKey = nil
+
+                keybindButton.MouseButton1Click:Connect(function()
+                    binding = true
+                    keybindButton.Text = "..."
+                end)
+
+                game:GetService("UserInputService").InputBegan:Connect(function(input)
+                    if binding and input.UserInputType == Enum.UserInputType.Keyboard then
+                        assignedKey = input.KeyCode
+                        keybindButton.Text = input.KeyCode.Name
+                        binding = false
+                    end
+                end)
+
+                game:GetService("UserInputService").InputBegan:Connect(function(input)
+                    if input.KeyCode == assignedKey then
+                        keybindOptions.Callback()                        
+                        if keybindOptions.Name == "Toggle Aimbot" then
+                            if aimbotEnabled then
+                                keybindButton.TextColor3 = Color3.fromRGB(0, 255, 0) 
+                                keybindButton.Text = "[ON] " .. assignedKey.Name
+                            else
+                                keybindButton.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                keybindButton.Text = "[OFF] " .. assignedKey.Name
+                            end
+                        end
+                    end
+                end)
+
+                elementYPos = elementYPos + 40
+                sectionHeight = sectionHeight + 40
+                section.Size = UDim2.new(1, 0, 0, sectionHeight)
+            end
+
+            tabAPI.SectionYOffset = tabAPI.SectionYOffset + sectionHeight + 10
+            return sectionAPI
+        end
+
+        table.insert(windowAPI.Tabs, tabAPI)
+
+        tabButton.MouseButton1Click:Connect(function()
+            for _, otherTab in pairs(windowAPI.Tabs) do
+                otherTab.Frame.Visible = false
+            end
+            tabFrame.Visible = true
+        end)
+
+        if #windowAPI.Tabs == 1 then
+            tabFrame.Visible = true
+        end
+
+        return tabAPI
+    end
+
+    return windowAPI
+end
+
+
+local Scylla = ScyllaLibrary:CreateWindow({
+    Name = "Portal Hub - Quinn's Ui Library",
+    BackgroundColor = Color3.fromRGB(50, 50, 50),
+    HeaderColor = Color3.fromRGB(35, 35, 35)
+})
